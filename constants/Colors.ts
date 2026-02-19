@@ -1,0 +1,48 @@
+const tintColorLight = '#15803d';
+const tintColorDark = '#4ade80';
+const brandGreen = '#22c55e';
+
+export default {
+  light: {
+    text: '#0f1410',
+    background: '#f5f7f1',
+    tint: tintColorLight,
+    tabIconDefault: '#9aa7a0',
+    tabIconSelected: tintColorLight,
+    surface: '#ffffff',
+    surfaceAlt: '#eef2ea',
+    card: '#ffffff',
+    cardBorder: '#d8e0d1',
+    border: '#d8e0d1',
+    borderStrong: '#bfcab7',
+    textMuted: '#4b5a4b',
+    textDim: '#6b7a6b',
+    green: brandGreen,
+    greenDim: '#16a34a',
+    greenGlow: '#15803d',
+    bannerBg: 'rgba(34,197,94,0.12)',
+    bannerBorder: 'rgba(34,197,94,0.25)',
+    overlay: 'rgba(15,20,16,0.05)',
+  },
+  dark: {
+    text: '#fff',
+    background: '#080f08',
+    tint: tintColorDark,
+    tabIconDefault: '#6b7280',
+    tabIconSelected: tintColorDark,
+    surface: '#122012',
+    surfaceAlt: '#0f1a0f',
+    card: '#122012',
+    cardBorder: '#1e3a1e',
+    border: '#1e3a1e',
+    borderStrong: '#2b4a2b',
+    textMuted: '#4ade80',
+    textDim: '#6b7280',
+    green: brandGreen,
+    greenDim: '#16a34a',
+    greenGlow: '#15803d',
+    bannerBg: 'rgba(34,197,94,0.12)',
+    bannerBorder: 'rgba(74,222,128,0.22)',
+    overlay: 'rgba(255,255,255,0.06)',
+  },
+};
