@@ -54,10 +54,6 @@ function RootLayoutNav() {
       <QueryProvider>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Maqit' }} />
-          <Stack.Screen
-            name="settings"
-            options={{ headerTitle: 'Appearance', headerBackTitle: 'Home' }}
-          />
         </Stack>
       </QueryProvider>
     </ThemeProvider>

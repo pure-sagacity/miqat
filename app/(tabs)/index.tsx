@@ -35,6 +35,31 @@ function getNextPrayer(prayers: PrayerTimes) {
   return prayerTimes[0];
 }
 
+function getActivePrayer(prayers: PrayerTimes) {
+  const now = new Date();
+  const currentTime = now.getHours() * 60 + now.getMinutes();
+
+  const prayerTimes = [
+    { name: 'Fajr', time: prayers.Fajr },
+    { name: 'Dhuhr', time: prayers.Dhuhr },
+    { name: 'Asr', time: prayers.Asr },
+    { name: 'Maghrib', time: prayers.Maghrib },
+    { name: 'Isha', time: prayers.Isha },
+  ].map((prayer) => {
+    const [hour, minute] = prayer.time.split(':').map(Number);
+    return { ...prayer, prayerTime: hour * 60 + minute };
+  });
+
+  for (let i = prayerTimes.length - 1; i >= 0; i--) {
+    if (currentTime >= prayerTimes[i].prayerTime) {
+      return prayerTimes[i];
+    }
+  }
+
+  // Before Fajr, the active window is still Isha from the previous day.
+  return prayerTimes[prayerTimes.length - 1];
+}
+
 function determineStatus(prayerName: string, prayers: PrayerTimes): Status {
   const now = new Date();
   const currentTime = now.getHours() * 60 + now.getMinutes();
@@ -97,6 +122,7 @@ function getCountdownToPrayer(time: string) {
 export default function MaqitScreen() {
   const { data: prayers, isLoading, error } = usePrayerTimes();
   const [nextPrayer, setNextPrayer] = useState<{ name: string; time: string } | null>(null);
+  const [activePrayer, setActivePrayer] = useState<{ name: string; time: string } | null>(null);
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? 'light'];
   const styles = React.useMemo(() => createStyles(theme), [theme]);
@@ -110,7 +136,9 @@ export default function MaqitScreen() {
   useEffect(() => {
     if (prayers) {
       const next = getNextPrayer(prayers);
+      const active = getActivePrayer(prayers);
       setNextPrayer(next);
+      setActivePrayer(active);
     }
   }, [prayers, isLoading]);
 
@@ -123,6 +151,18 @@ export default function MaqitScreen() {
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
       >
+        {/* ── Active Prayer Banner ───────────────────────── */}
+        <View style={styles.bannerActive}>
+          <View>
+            <Text style={styles.bannerLabel}>ACTIVE PRAYER</Text>
+            <Text style={styles.bannerName}>{activePrayer?.name}</Text>
+          </View>
+          <View style={styles.bannerRight}>
+            <Text style={styles.bannerTime}>{activePrayer?.time}</Text>
+            <Text style={styles.bannerCountdown}>Current window</Text>
+          </View>
+        </View>
+
         {/* ── Next Prayer Banner ─────────────────────────── */}
         <View style={styles.banner}>
           <View>
@@ -131,7 +171,7 @@ export default function MaqitScreen() {
             <Text style={styles.bannerDate}>Thu, 19 February</Text>
           </View>
           <View style={styles.bannerRight}>
-            <Text style={styles.bannerTime}>{nextPrayer?.time}</Text>
+            <Text style={styles.bannerTimeMuted}>{nextPrayer?.time}</Text>
             <Text style={styles.bannerCountdown}>{countdown ? `in ${countdown}` : ''}</Text>
           </View>
         </View>
@@ -140,11 +180,11 @@ export default function MaqitScreen() {
         <View style={styles.list}>
           {!isLoading && prayers ? (
             <>
-              <PrayerRow name="Fajr" time={prayers.Fajr} Icon={Sunrise} label="Pre-dawn" theme={theme} prayers={prayers} />
-              <PrayerRow name="Dhuhr" time={prayers.Dhuhr} Icon={Sun} label="Noon" theme={theme} prayers={prayers} />
-              <PrayerRow name="Asr" time={prayers.Asr} Icon={Cloud} label="Afternoon" theme={theme} prayers={prayers} />
-              <PrayerRow name="Maghrib" time={prayers.Maghrib} Icon={Sunset} label="Sunset" theme={theme} prayers={prayers} />
-              <PrayerRow name="Isha" time={prayers.Isha} Icon={Moon} label="Night" theme={theme} prayers={prayers} />
+              <PrayerRow name="Fajr" time={prayers.Fajr} Icon={Sunrise} label="Pre-dawn" theme={theme} prayers={prayers} activePrayerName={activePrayer?.name} nextPrayerName={nextPrayer?.name} />
+              <PrayerRow name="Dhuhr" time={prayers.Dhuhr} Icon={Sun} label="Noon" theme={theme} prayers={prayers} activePrayerName={activePrayer?.name} nextPrayerName={nextPrayer?.name} />
+              <PrayerRow name="Asr" time={prayers.Asr} Icon={Cloud} label="Afternoon" theme={theme} prayers={prayers} activePrayerName={activePrayer?.name} nextPrayerName={nextPrayer?.name} />
+              <PrayerRow name="Maghrib" time={prayers.Maghrib} Icon={Sunset} label="Sunset" theme={theme} prayers={prayers} activePrayerName={activePrayer?.name} nextPrayerName={nextPrayer?.name} />
+              <PrayerRow name="Isha" time={prayers.Isha} Icon={Moon} label="Night" theme={theme} prayers={prayers} activePrayerName={activePrayer?.name} nextPrayerName={nextPrayer?.name} />
             </>
           ) : (
             <ActivityIndicator
@@ -168,6 +208,8 @@ function PrayerRow({
   label,
   theme,
   prayers,
+  activePrayerName,
+  nextPrayerName,
 }: {
   name: string;
   time: string;
@@ -175,9 +217,12 @@ function PrayerRow({
   label: string;
   theme: (typeof Colors)['light'];
   prayers: PrayerTimes;
+  activePrayerName?: string;
+  nextPrayerName?: string;
 }) {
   const status = determineStatus(name, prayers);
-  const isActive = status === 'active';
+  const isActive = activePrayerName === name;
+  const isNext = nextPrayerName === name;
   const isDone = status === 'done';
   const styles = React.useMemo(() => createStyles(theme), [theme]);
   const iconColor = isActive ? theme.green : isDone ? theme.textDim : theme.textMuted;
@@ -187,11 +232,12 @@ function PrayerRow({
       style={[
         styles.row,
         isActive && styles.rowActive,
+        isNext && styles.rowNext,
         isDone && styles.rowDone,
       ]}
     >
       {/* Icon pill */}
-      <View style={[styles.iconPill, isActive && styles.iconPillActive]}>
+      <View style={[styles.iconPill, isActive && styles.iconPillActive, isNext && styles.iconPillNext]}>
         <Icon
           size={16}
           color={iconColor}
@@ -204,6 +250,7 @@ function PrayerRow({
           style={[
             styles.prayerName,
             isActive && styles.prayerNameActive,
+            isNext && styles.prayerNameNext,
             isDone && styles.prayerNameDone,
           ]}
         >
@@ -218,12 +265,14 @@ function PrayerRow({
           style={[
             styles.prayerTime,
             isActive && styles.prayerTimeActive,
+            isNext && styles.prayerTimeNext,
             isDone && styles.prayerTimeDone,
           ]}
         >
           {time}
         </Text>
-        {isActive && <Text style={styles.badgeActive}>NEXT</Text>}
+        {isNext && <Text style={styles.badgeActive}>NEXT</Text>}
+        {isActive && <Text style={styles.badgeActive}>CURRENT</Text>}
         {isDone && <Text style={styles.badgeDone}>Done</Text>}
       </View>
     </View>
@@ -246,6 +295,17 @@ const createStyles = (theme: (typeof Colors)['light']) =>
 
     // Banner
     banner: {
+      backgroundColor: theme.surface,
+      borderWidth: 1,
+      borderColor: theme.border,
+      borderRadius: 20,
+      padding: 18,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 20,
+    },
+    bannerActive: {
       backgroundColor: theme.bannerBg,
       borderWidth: 1,
       borderColor: theme.bannerBorder,
@@ -254,7 +314,7 @@ const createStyles = (theme: (typeof Colors)['light']) =>
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: 20,
+      marginBottom: 12,
     },
     bannerLabel: {
       fontSize: 10,
@@ -283,6 +343,12 @@ const createStyles = (theme: (typeof Colors)['light']) =>
       color: theme.green,
       letterSpacing: -2,
     },
+    bannerTimeMuted: {
+      fontSize: 30,
+      fontWeight: '800',
+      color: theme.text,
+      letterSpacing: -1,
+    },
     bannerCountdown: {
       fontSize: 12,
       color: theme.textDim,
@@ -308,6 +374,10 @@ const createStyles = (theme: (typeof Colors)['light']) =>
       backgroundColor: theme.bannerBg,
       borderColor: theme.bannerBorder,
     },
+    rowNext: {
+      backgroundColor: theme.surface,
+      borderColor: theme.bannerBorder,
+    },
     rowDone: {
       backgroundColor: theme.surfaceAlt,
       borderColor: theme.border,
@@ -324,6 +394,9 @@ const createStyles = (theme: (typeof Colors)['light']) =>
     iconPillActive: {
       backgroundColor: theme.bannerBg,
     },
+    iconPillNext: {
+      backgroundColor: theme.surfaceAlt,
+    },
 
     rowMid: {
       flex: 1,
@@ -335,6 +408,10 @@ const createStyles = (theme: (typeof Colors)['light']) =>
       letterSpacing: -0.3,
     },
     prayerNameActive: {
+      fontWeight: '700',
+      color: theme.text,
+    },
+    prayerNameNext: {
       fontWeight: '700',
       color: theme.text,
     },
@@ -358,6 +435,9 @@ const createStyles = (theme: (typeof Colors)['light']) =>
     },
     prayerTimeActive: {
       color: theme.green,
+    },
+    prayerTimeNext: {
+      color: theme.text,
     },
     prayerTimeDone: {
       color: theme.textDim,
