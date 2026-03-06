@@ -3,7 +3,7 @@ import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
 import { Tabs } from 'expo-router';
-import { Box, HandHelping } from 'lucide-react-native';
+import { Cog, HandHelping } from 'lucide-react-native';
 import React, { Suspense } from 'react';
 import { Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -39,12 +39,12 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="qibla"
+        name="settings"
         options={{
-          title: 'Qibla',
-          tabBarIcon: ({ color }) => <Box color={color} />,
+          title: 'Settings',
+          tabBarIcon: ({ color }) => <Cog color={color} />,
         }}
-      ></Tabs.Screen>
+      />
     </Tabs>
   );
 }

@@ -35,14 +35,43 @@ function getNextPrayer(prayers: PrayerTimes) {
   return prayerTimes[0];
 }
 
-function determineStatus(prayerTime: number): Status {
+function determineStatus(prayerName: string, prayers: PrayerTimes): Status {
   const now = new Date();
   const currentTime = now.getHours() * 60 + now.getMinutes();
 
-  if (currentTime > prayerTime) {
-    return 'done';
-  } else if (currentTime === prayerTime) {
+  // Convert all prayer times to minutes
+  const prayerArray = [
+    { name: 'Fajr', time: prayers.Fajr },
+    { name: 'Dhuhr', time: prayers.Dhuhr },
+    { name: 'Asr', time: prayers.Asr },
+    { name: 'Maghrib', time: prayers.Maghrib },
+    { name: 'Isha', time: prayers.Isha },
+  ].map(p => {
+    const [hour, minute] = p.time.split(':').map(Number);
+    return { ...p, minutes: hour * 60 + minute };
+  });
+
+  // Find the current active prayer (last prayer that has started)
+  let activePrayerIndex = -1;
+  for (let i = prayerArray.length - 1; i >= 0; i--) {
+    if (currentTime >= prayerArray[i].minutes) {
+      activePrayerIndex = i;
+      break;
+    }
+  }
+
+  // If no prayer has started yet, all are upcoming
+  if (activePrayerIndex === -1) {
+    return 'upcoming';
+  }
+
+  const activePrayer = prayerArray[activePrayerIndex];
+  const prayerIndex = prayerArray.findIndex(p => p.name === prayerName);
+
+  if (prayerName === activePrayer.name) {
     return 'active';
+  } else if (prayerIndex < activePrayerIndex) {
+    return 'done';
   } else {
     return 'upcoming';
   }
@@ -111,11 +140,11 @@ export default function MaqitScreen() {
         <View style={styles.list}>
           {!isLoading && prayers ? (
             <>
-              <PrayerRow name="Fajr" time={prayers.Fajr} Icon={Sunrise} label="Pre-dawn" theme={theme} />
-              <PrayerRow name="Dhuhr" time={prayers.Dhuhr} Icon={Sun} label="Noon" theme={theme} />
-              <PrayerRow name="Asr" time={prayers.Asr} Icon={Cloud} label="Afternoon" theme={theme} />
-              <PrayerRow name="Maghrib" time={prayers.Maghrib} Icon={Sunset} label="Sunset" theme={theme} />
-              <PrayerRow name="Isha" time={prayers.Isha} Icon={Moon} label="Night" theme={theme} />
+              <PrayerRow name="Fajr" time={prayers.Fajr} Icon={Sunrise} label="Pre-dawn" theme={theme} prayers={prayers} />
+              <PrayerRow name="Dhuhr" time={prayers.Dhuhr} Icon={Sun} label="Noon" theme={theme} prayers={prayers} />
+              <PrayerRow name="Asr" time={prayers.Asr} Icon={Cloud} label="Afternoon" theme={theme} prayers={prayers} />
+              <PrayerRow name="Maghrib" time={prayers.Maghrib} Icon={Sunset} label="Sunset" theme={theme} prayers={prayers} />
+              <PrayerRow name="Isha" time={prayers.Isha} Icon={Moon} label="Night" theme={theme} prayers={prayers} />
             </>
           ) : (
             <ActivityIndicator
@@ -138,14 +167,16 @@ function PrayerRow({
   Icon,
   label,
   theme,
+  prayers,
 }: {
   name: string;
   time: string;
   Icon: React.ComponentType<{ size: number; color: string }>;
   label: string;
   theme: (typeof Colors)['light'];
+  prayers: PrayerTimes;
 }) {
-  const status = determineStatus(parseInt(time.split(':')[0]) * 60 + parseInt(time.split(':')[1]));
+  const status = determineStatus(name, prayers);
   const isActive = status === 'active';
   const isDone = status === 'done';
   const styles = React.useMemo(() => createStyles(theme), [theme]);
