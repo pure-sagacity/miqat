@@ -15,11 +15,17 @@
       "distribution": "store",
       "ios": {
         "buildConfiguration": "Release",
-        "ascAppId": "6759406038",
         "autoIncrement": true
       },
       "android": {
         "buildType": "app-bundle"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "ascAppId": "6759406038"
       }
     }
   }
