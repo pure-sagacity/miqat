@@ -15,6 +15,7 @@
       "distribution": "store",
       "ios": {
         "buildConfiguration": "Release",
+        "ascAppId": "6759406038",
         "autoIncrement": true
       },
       "android": {
